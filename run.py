@@ -330,9 +330,36 @@ def check_hdr(item):
                     else:
                         logging.info("Unknown HDR type") 
                         return '4KSDR'
-    else:
+    elif media_file['Width'] > 1280:
         # Placeholder for 1080p overlays
-        return '1080p'
+        # Check if the movie is SDR, HDR, or DoVI
+        for media_source in media_file['MediaSources']:
+            for media_stream in media_source['MediaStreams']:
+                if media_stream['Codec'] == 'hevc' or media_stream['Codec'] == 'h264' or media_stream['Codec'] == 'vp9' or media_stream['Codec'] == 'av1':
+                    if media_stream['VideoRange'] == 'SDR' and media_stream['VideoRangeType'] == 'SDR':
+                        logging.info("HDR type is SDR")
+                        return 'FHDSDR'
+                    elif media_stream['VideoRange'] == 'HDR' and (media_stream['VideoRangeType'].startswith('HDR10') or media_stream['VideoRangeType'].startswith('HLG')):
+                        if 'VideoDoViTitle' in media_stream:
+                            if media_stream['VideoDoViTitle'].startswith('DV Profile'):
+                                logging.info("HDR type is DV + HDR")
+                                return 'FHDDVHDR'
+                        else:
+                            logging.info("HDR type is HDR Only")
+                            return 'FHDHDR'
+                    elif media_stream['VideoRange'] == 'HDR' and media_stream['VideoRangeType'] == 'DOVI':
+                        if 'VideoDoViTitle' in media_stream and media_stream['VideoDoViTitle'].startswith('DV Profile'):
+                            logging.info("HDR type is DV only")
+                            return 'FHDDV'
+                        else:
+                            logging.info("Unknown HDR type")
+                            return 'FHDSDR'
+                    else:
+                        logging.info("Unknown HDR type") 
+                        return 'FHDSDR'
+        #return '1080p'
+    else:
+        return 'unknown'
 
 def update_tag(movie, item, add, tag):
     
